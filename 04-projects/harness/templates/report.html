@@ -54,6 +54,8 @@
     .evidence:first-of-type { border-top: 0; }
     .evidence small { color: var(--muted); }
     .next { border: 1px solid var(--line); background: var(--panel); padding: 16px 18px; }
+    figure { margin: 16px 0 0; }
+    figcaption { color: var(--muted); margin-top: 6px; font-size: 13px; }
     img { max-width: 100%; height: auto; border: 1px solid var(--line); }
   </style>
 </head>
@@ -76,15 +78,7 @@
         <tr><th>Phase</th><th>Goal</th><th>AC covered</th><th>State</th><th>Evidence</th></tr>
       </thead>
       <tbody>
-        <!-- REPEAT phase -->
-        <tr>
-          <td>{{phase_id}}</td>
-          <td>{{phase_goal}}</td>
-          <td>{{phase_ac}}</td>
-          <td class="status {{phase_state_class}}">{{phase_state}}</td>
-          <td>{{phase_evidence}}</td>
-        </tr>
-        <!-- /REPEAT phase -->
+        {{phase_rows}}
       </tbody>
     </table>
   </section>
@@ -96,39 +90,24 @@
         <tr><th>Criterion</th><th>Requirement</th><th>Phase / task</th><th>Latest evidence</th><th>Status</th></tr>
       </thead>
       <tbody>
-        <!-- REPEAT criterion -->
-        <tr>
-          <td>{{ac_id}}</td>
-          <td>{{ac_text}}</td>
-          <td>{{ac_owner}}</td>
-          <td>{{ac_evidence}}</td>
-          <td class="status {{ac_status_class}}">{{ac_status}}</td>
-        </tr>
-        <!-- /REPEAT criterion -->
+        {{criterion_rows}}
       </tbody>
     </table>
   </section>
 
   <section>
     <h2>Evidence</h2>
-    <!-- REPEAT evidence -->
-    <article class="evidence">
-      <strong>{{evidence_ac}} | {{evidence_cp}} | <span class="{{evidence_result_class}}">{{evidence_result}}</span></strong>
-      <p>{{evidence_observation}}</p>
-      <small>Artifact: <code>{{evidence_artifact}}</code></small>
-      <!-- FILL optional-media -->
-    </article>
-    <!-- /REPEAT evidence -->
+    {{evidence_blocks}}
   </section>
 
   <section>
     <h2>Open items</h2>
-    <!-- FILL open-items -->
+    {{open_items}}
   </section>
 
   <section>
     <h2>Next action</h2>
-    <div class="next"><!-- FILL next-action --></div>
+    <div class="next">{{next_action}}</div>
   </section>
 </main>
 </body>
