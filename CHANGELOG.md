@@ -10,6 +10,7 @@ All notable changes to COG (Cognition + Obsidian + Git) will be documented in th
 - `checkpoint.sh record` now rejects results outside `PASS`, `FAIL`, and `SKIP` before writing evidence.
 - Checkpoint TSV serialization now keeps free-text notes and run paths on one row by normalizing tabs and newlines and using `printf` instead of `echo -e`.
 - Closed-loop and ultragoal flows now ship the `SPEC-template.md` and self-contained `report.html` assets they already reference.
+- Harness HTML reports now render from structured JSON through `scripts/render-harness-report.py`; text fields are HTML-escaped and media is restricted to validated base64 image data URIs.
 
 ### Added
 
