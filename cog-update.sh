@@ -45,6 +45,11 @@ FRAMEWORK_FILES=(
   "tests/test-cog-update-force.sh"
   "tests/test-cursor-agent-parity.sh"
   "tests/test-lane-classify.sh"
+  "tests/test-checkpoint.sh"
+  "tests/test-harness-assets.sh"
+  "04-projects/harness/templates/evidence-ledger.md"
+  "04-projects/harness/templates/SPEC-template.md"
+  "04-projects/harness/templates/report.html"
 
   # Claude Code skills
   ".claude/skills/onboarding/SKILL.md"
