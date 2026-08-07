@@ -86,6 +86,14 @@ def base_data() -> dict:
     }
 
 
+def assert_rejected_media(data_uri: str, directory: Path, label: str) -> None:
+    unsafe = base_data()
+    unsafe["evidence"][0]["media"] = [{"data_uri": data_uri, "alt": label}]
+    result = run_renderer(unsafe, directory)
+    if result.returncode == 0:
+        raise AssertionError(f"renderer accepted unsafe media: {label}")
+
+
 def main() -> int:
     with tempfile.TemporaryDirectory() as tmp:
         directory = Path(tmp)
@@ -102,19 +110,23 @@ def main() -> int:
             raise AssertionError("untrusted event-handler markup reached the report")
         if f"data:image/png;base64,{ONE_PIXEL_PNG}" not in rendered:
             raise AssertionError("validated data-image media was not rendered")
+        csp = "default-src 'none'; img-src data:; style-src 'unsafe-inline';"
+        if csp not in rendered:
+            raise AssertionError("rendered report is missing the restrictive CSP")
 
-        unsafe = base_data()
-        unsafe["evidence"][0]["media"] = [
-            {
-                "data_uri": "data:text/html;base64,PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg==",
-                "alt": "unsafe",
-            }
-        ]
-        unsafe_result = run_renderer(unsafe, directory)
-        if unsafe_result.returncode == 0:
-            raise AssertionError("renderer accepted a non-image data URI")
+        assert_rejected_media(
+            "data:text/html;base64,PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg==",
+            directory,
+            "HTML data URI",
+        )
+        assert_rejected_media(
+            "data:image/svg+xml;base64,PHN2ZyBvbmxvYWQ9ImFsZXJ0KDEpIj48L3N2Zz4=",
+            directory,
+            "SVG data URI",
+        )
+        assert_rejected_media("javascript:alert(1)", directory, "javascript URI")
 
-    print("harness report renderer escapes text and rejects unsafe media")
+    print("harness report renderer escapes text, enforces CSP, and rejects unsafe media")
     return 0
 
 
