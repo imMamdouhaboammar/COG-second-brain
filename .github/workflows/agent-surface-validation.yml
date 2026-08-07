@@ -23,5 +23,8 @@ jobs:
       - name: Preserve updater executable modes
         run: bash tests/test-cog-update-file-mode.sh
 
+      - name: Exercise force-mode multi-file updates
+        run: bash tests/test-cog-update-force.sh
+
       - name: Validate packaged agent surfaces
         run: bash scripts/validate-agent-surface.sh
