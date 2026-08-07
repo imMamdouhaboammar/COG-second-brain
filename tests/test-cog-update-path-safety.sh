@@ -37,7 +37,7 @@ make_consumer() {
   git -C "$path" remote add cog-upstream "$upstream"
 }
 
-# Regression 1: a framework path must never follow a symlink outside the checkout.
+# Regression 1: a framework file symlink must never write through to its target.
 symlink_upstream="$TMP_DIR/symlink-upstream"
 symlink_consumer="$TMP_DIR/symlink-consumer"
 outside_target="$TMP_DIR/private-user-file.txt"
@@ -59,7 +59,31 @@ if [[ "$(cat "$outside_target")" != "private user content" ]]; then
   fail "updater followed README.md symlink and modified content outside the checkout (status=$symlink_status): $symlink_output"
 fi
 
-# Regression 2: running from a nested directory must still operate on the Git root.
+# Regression 2: a symlinked parent directory must not redirect framework writes outside the checkout.
+parent_upstream="$TMP_DIR/parent-upstream"
+parent_consumer="$TMP_DIR/parent-consumer"
+outside_dir="$TMP_DIR/outside-claude"
+make_upstream "$parent_upstream"
+mkdir -p "$parent_upstream/.claude/lib"
+printf '#!/usr/bin/env bash\necho upstream helper\n' > "$parent_upstream/.claude/lib/checkpoint.sh"
+git -C "$parent_upstream" add .claude/lib/checkpoint.sh
+git -C "$parent_upstream" commit -q -m "fixture: upstream helper"
+make_consumer "$parent_consumer" "$parent_upstream"
+mkdir -p "$outside_dir"
+ln -s "$outside_dir" "$parent_consumer/.claude"
+git -C "$parent_consumer" add .claude
+git -C "$parent_consumer" commit -q -m "fixture: symlinked framework parent"
+
+set +e
+parent_output="$(cd "$parent_consumer" && bash cog-update.sh --force 2>&1)"
+parent_status=$?
+set -e
+
+if [[ -e "$outside_dir/lib/checkpoint.sh" ]]; then
+  fail "updater followed symlinked .claude parent and wrote outside the checkout (status=$parent_status): $parent_output"
+fi
+
+# Regression 3: running from a nested directory must still operate on the Git root.
 root_upstream="$TMP_DIR/root-upstream"
 root_consumer="$TMP_DIR/root-consumer"
 make_upstream "$root_upstream"
