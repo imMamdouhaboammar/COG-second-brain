@@ -28,6 +28,9 @@ jobs:
       - name: Test checkpoint evidence integrity
         run: bash tests/test-checkpoint.sh
 
+      - name: Check closed-loop harness assets
+        run: bash tests/test-harness-assets.sh
+
       - name: Detect updater mode drift
         run: bash tests/test-cog-update-mode-drift.sh
 
