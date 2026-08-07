@@ -12,14 +12,19 @@ git init -q -b main "$upstream"
 git -C "$upstream" config user.name "COG Test"
 git -C "$upstream" config user.email "cog-test@example.invalid"
 mkdir -p "$upstream/scripts"
-printf '#!/usr/bin/env bash\necho fixture\n' > "$upstream/scripts/new-helper.sh"
-chmod +x "$upstream/scripts/new-helper.sh"
-git -C "$upstream" add scripts/new-helper.sh
-git -C "$upstream" commit -q -m "fixture: executable helper"
+printf '#!/usr/bin/env bash\necho executable fixture\n' > "$upstream/scripts/executable-helper.sh"
+printf '#!/usr/bin/env bash\necho regular fixture\n' > "$upstream/scripts/regular-helper.sh"
+chmod +x "$upstream/scripts/executable-helper.sh"
+chmod -x "$upstream/scripts/regular-helper.sh"
+git -C "$upstream" add scripts/executable-helper.sh scripts/regular-helper.sh
+git -C "$upstream" commit -q -m "fixture: mixed file modes"
 
 git init -q -b main "$consumer"
 git -C "$consumer" remote add fixture "$upstream"
 git -C "$consumer" fetch -q fixture main
+mkdir -p "$consumer/scripts"
+cp "$upstream/scripts/regular-helper.sh" "$consumer/scripts/regular-helper.sh"
+chmod +x "$consumer/scripts/regular-helper.sh"
 
 (
   cd "$consumer"
@@ -28,12 +33,18 @@ git -C "$consumer" fetch -q fixture main
   REMOTE_NAME="fixture"
   BRANCH="main"
 
-  update_file "scripts/new-helper.sh"
+  update_file "scripts/executable-helper.sh"
+  update_file "scripts/regular-helper.sh"
 
-  if [[ ! -x scripts/new-helper.sh ]]; then
-    echo "expected update_file to preserve the upstream executable bit" >&2
+  if [[ ! -x scripts/executable-helper.sh ]]; then
+    echo "expected update_file to apply upstream 100755 mode" >&2
+    exit 1
+  fi
+
+  if [[ -x scripts/regular-helper.sh ]]; then
+    echo "expected update_file to apply upstream 100644 mode" >&2
     exit 1
   fi
 )
 
-echo "cog-update preserves executable mode for new framework scripts"
+echo "cog-update applies both supported upstream file modes"
