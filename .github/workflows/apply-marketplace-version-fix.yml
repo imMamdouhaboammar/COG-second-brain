@@ -1,0 +1,118 @@
+name: Apply marketplace version fix
+
+on:
+  push:
+    branches:
+      - fix/agent-surface-validator-parity
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v6
+        with:
+          ref: fix/agent-surface-validator-parity
+
+      - name: Patch validator version contract
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('scripts/validate-agent-surface.sh')
+          text = path.read_text(encoding='utf-8')
+
+          old_imports = '''from pathlib import Path
+          import json
+          import sys
+
+          try:
+          '''
+          new_imports = '''from pathlib import Path
+          import json
+          import re
+          import sys
+
+          try:
+          '''
+          if old_imports not in text:
+              raise SystemExit('version import marker not found')
+          text = text.replace(old_imports, new_imports, 1)
+
+          old_values = '''    values = {
+                  ".claude-plugin/plugin.json": json.loads(Path(".claude-plugin/plugin.json").read_text())["version"],
+                  ".cursor-plugin/plugin.json": json.loads(Path(".cursor-plugin/plugin.json").read_text())["version"],
+                  "plugin.json": json.loads(Path("plugin.json").read_text())["version"],
+                  "marketplace-entry.json": json.loads(Path("marketplace-entry.json").read_text())["version"],
+                  "COG-VERSION": Path("COG-VERSION").read_text().strip(),
+              }
+          '''
+          new_values = '''    marketplace_docs = Path(".github/MARKETPLACE.md").read_text(encoding="utf-8")
+              marketplace_match = re.search(
+                  r"Current packaged version:\\s+\\*\\*([^*]+)\\*\\*",
+                  marketplace_docs,
+              )
+              if not marketplace_match:
+                  print("Could not read marketplace documentation version")
+                  sys.exit(1)
+
+              values = {
+                  ".claude-plugin/plugin.json": json.loads(Path(".claude-plugin/plugin.json").read_text())["version"],
+                  ".cursor-plugin/plugin.json": json.loads(Path(".cursor-plugin/plugin.json").read_text())["version"],
+                  "plugin.json": json.loads(Path("plugin.json").read_text())["version"],
+                  "marketplace-entry.json": json.loads(Path("marketplace-entry.json").read_text())["version"],
+                  ".github/MARKETPLACE.md": marketplace_match.group(1).strip(),
+                  "COG-VERSION": Path("COG-VERSION").read_text().strip(),
+              }
+          '''
+          if old_values not in text:
+              raise SystemExit('version values marker not found')
+          text = text.replace(old_values, new_values, 1)
+
+          old_after_except = '''except (OSError, KeyError, json.JSONDecodeError) as exc:
+              print(f"Could not read package versions: {exc}")
+              sys.exit(1)
+
+          versions = set(values.values())
+          '''
+          new_after_except = '''except (OSError, KeyError, json.JSONDecodeError) as exc:
+              print(f"Could not read package versions: {exc}")
+              sys.exit(1)
+
+          cog_version = values["COG-VERSION"]
+          marketplace_docs_version = values[".github/MARKETPLACE.md"]
+          if marketplace_docs_version != cog_version:
+              print(
+                  "Marketplace docs version mismatch: "
+                  f".github/MARKETPLACE.md={marketplace_docs_version} "
+                  f"COG-VERSION={cog_version}"
+              )
+              sys.exit(1)
+
+          versions = set(values.values())
+          '''
+          if old_after_except not in text:
+              raise SystemExit('version comparison marker not found')
+          text = text.replace(old_after_except, new_after_except, 1)
+
+          old_success = 'Version is aligned across .claude-plugin/plugin.json, .cursor-plugin/plugin.json, plugin.json, marketplace-entry.json, and COG-VERSION'
+          new_success = 'Version is aligned across .claude-plugin/plugin.json, .cursor-plugin/plugin.json, plugin.json, marketplace-entry.json, .github/MARKETPLACE.md, and COG-VERSION'
+          if old_success not in text:
+              raise SystemExit('version success marker not found')
+          text = text.replace(old_success, new_success, 1)
+
+          path.write_text(text, encoding='utf-8')
+          PY
+
+      - name: Commit patch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add scripts/validate-agent-surface.sh
+          git diff --cached --check
+          git commit -m "fix: validate marketplace packaged version"
+          git push origin HEAD:fix/agent-surface-validator-parity
