@@ -162,6 +162,15 @@ else:
     if "invoke_subagent" not in rules:
         add(".agents/rules/cog.md is missing the invoke_subagent substitution")
 
+agents_doc_path = Path("AGENTS.md")
+if not agents_doc_path.is_file():
+    add("AGENTS.md is missing")
+else:
+    agents_doc = agents_doc_path.read_text(encoding="utf-8")
+    for name in sorted(claude_skills):
+        if f"### /{name}" not in agents_doc:
+            add(f"AGENTS.md is missing /{name}")
+
 manifest_path = Path(".claude-plugin/plugin.json")
 if manifest_path.is_file():
     try:
