@@ -1,4 +1,4 @@
-name: Agent Surface Validation
+name: Framework Validation
 
 on:
   push:
@@ -14,8 +14,14 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v6
 
-      - name: Run validator regression tests
+      - name: Run agent-surface regression tests
         run: bash tests/test-agent-surface-validator.sh
+
+      - name: Detect updater mode drift
+        run: bash tests/test-cog-update-mode-drift.sh
+
+      - name: Preserve updater executable modes
+        run: bash tests/test-cog-update-file-mode.sh
 
       - name: Validate packaged agent surfaces
         run: bash scripts/validate-agent-surface.sh
