@@ -34,7 +34,7 @@ jobs:
 
           updated_count = text.count('((updated++))')
           skipped_count = text.count('((skipped++))')
-          if updated_count not in (0, 5) or skipped_count not in (0, 3):
+          if updated_count not in (0, 6) or skipped_count not in (0, 3):
               raise SystemExit(
                   f'unexpected counter occurrences: updated={updated_count} skipped={skipped_count}'
               )
