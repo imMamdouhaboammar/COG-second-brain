@@ -1,0 +1,95 @@
+name: Apply updater remote trust fix
+
+on:
+  push:
+    branches:
+      - fix/updater-remote-trust
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v6
+        with:
+          ref: fix/updater-remote-trust
+
+      - name: Apply guarded updater patch
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('cog-update.sh')
+          text = path.read_text(encoding='utf-8')
+          old = '''# ── Ensure remote exists & fetch ─────────────────────────────────────
+          ensure_remote() {
+            if ! git remote get-url "$REMOTE_NAME" &>/dev/null; then
+              info "Adding remote ${BOLD}${REMOTE_NAME}${RESET} → ${REMOTE_URL}"
+              git remote add "$REMOTE_NAME" "$REMOTE_URL"
+            fi
+            info "Fetching latest from ${BOLD}${REMOTE_NAME}/${BRANCH}${RESET}..."
+            git fetch "$REMOTE_NAME" "$BRANCH" --quiet
+          }
+          '''
+          new = '''# ── Ensure remote exists & fetch ─────────────────────────────────────
+          normalize_remote_url() {
+            local url="$1"
+            url="${url%.git}"
+
+            case "$url" in
+              git@github.com:*)
+                printf 'https://github.com/%s\\n' "${url#git@github.com:}"
+                ;;
+              ssh://git@github.com/*)
+                printf 'https://github.com/%s\\n' "${url#ssh://git@github.com/}"
+                ;;
+              https://github.com/*)
+                printf '%s\\n' "$url"
+                ;;
+              *)
+                printf '%s\\n' "$url"
+                ;;
+            esac
+          }
+
+          remote_urls_match() {
+            local actual="$1" expected="$2"
+            [[ "$(normalize_remote_url "$actual")" == "$(normalize_remote_url "$expected")" ]]
+          }
+
+          ensure_remote() {
+            local actual_url
+
+            if actual_url=$(git remote get-url "$REMOTE_NAME" 2>/dev/null); then
+              if ! remote_urls_match "$actual_url" "$REMOTE_URL"; then
+                err "Refusing to fetch: remote ${REMOTE_NAME} points to ${actual_url}"
+                err "Expected trusted upstream: ${REMOTE_URL}"
+                err "Review the remote before changing it: git remote -v"
+                return 1
+              fi
+            else
+              info "Adding remote ${BOLD}${REMOTE_NAME}${RESET} → ${REMOTE_URL}"
+              git remote add "$REMOTE_NAME" "$REMOTE_URL"
+            fi
+
+            info "Fetching latest from ${BOLD}${REMOTE_NAME}/${BRANCH}${RESET}..."
+            git fetch "$REMOTE_NAME" "$BRANCH" --quiet
+          }
+          '''
+          if text.count(old) != 1:
+              raise SystemExit('ensure_remote block not found exactly once')
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          PY
+
+      - name: Commit patch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add cog-update.sh
+          git diff --cached --check
+          git commit -m "security: verify updater upstream remote"
+          git push origin HEAD:fix/updater-remote-trust
