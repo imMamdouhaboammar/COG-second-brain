@@ -17,6 +17,9 @@ jobs:
       - name: Run agent-surface regression tests
         run: bash tests/test-agent-surface-validator.sh
 
+      - name: Check Cursor agent parity
+        run: bash tests/test-cursor-agent-parity.sh
+
       - name: Detect updater mode drift
         run: bash tests/test-cog-update-mode-drift.sh
 
