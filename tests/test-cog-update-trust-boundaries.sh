@@ -66,14 +66,15 @@ git -C "$helper_consumer" remote add fixture "$fixture"
 git -C "$helper_consumer" fetch -q fixture main
 
 set +e
-helper_output="$((
+helper_output="$( (
   cd "$helper_consumer"
+  # shellcheck disable=SC1090
   source <(sed '/^main "\$@"$/d' "$ROOT_DIR/cog-update.sh")
   REMOTE_NAME="fixture"
   BRANCH="main"
   REPO_ROOT=""
   update_file "scripts/owned.sh"
-) 2>&1)"
+) 2>&1 )"
 helper_status=$?
 set -e
 
