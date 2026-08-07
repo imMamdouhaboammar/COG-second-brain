@@ -1,0 +1,155 @@
+name: Apply Cursor surface fix
+
+on:
+  push:
+    branches:
+      - fix/agent-surface-validator-parity
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v6
+        with:
+          ref: fix/agent-surface-validator-parity
+
+      - name: Apply targeted Cursor parity patch
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          cursor_path = Path('.cursor-plugin/plugin.json')
+          cursor = cursor_path.read_text()
+          old_agents = '''    "worker-publisher",
+              "brief-people-updater"
+            ]
+          }'''
+          new_agents = '''    "worker-publisher",
+              "brief-people-updater",
+              "task-verifier",
+              "integration-verifier",
+              "fix-agent",
+              "harvest-curator"
+            ]
+          }'''
+          if old_agents not in cursor:
+              raise SystemExit('Cursor agent-list marker not found')
+          cursor_path.write_text(cursor.replace(old_agents, new_agents, 1))
+
+          validator_path = Path('scripts/validate-agent-surface.sh')
+          validator = validator_path.read_text()
+
+          json_marker = 'validate_json ".claude-plugin/plugin.json"\n'
+          cursor_json_line = 'validate_json ".cursor-plugin/plugin.json"\n'
+          if cursor_json_line not in validator:
+              if json_marker not in validator:
+                  raise SystemExit('validator JSON marker not found')
+              validator = validator.replace(json_marker, json_marker + cursor_json_line, 1)
+
+          cursor_block = '''cursor_manifest_path = Path(".cursor-plugin/plugin.json")
+          if cursor_manifest_path.is_file():
+              try:
+                  cursor_manifest = json.loads(cursor_manifest_path.read_text(encoding="utf-8"))
+                  cursor_entries = cursor_manifest.get("skills", [])
+                  cursor_names = [entry.get("name") for entry in cursor_entries]
+                  cursor_paths = [entry.get("path") for entry in cursor_entries]
+                  duplicate_cursor_names = {
+                      name for name, count in Counter(cursor_names).items() if name and count > 1
+                  }
+                  duplicate_cursor_paths = {
+                      path for path, count in Counter(cursor_paths).items() if path and count > 1
+                  }
+                  if duplicate_cursor_names:
+                      add(f"Cursor plugin has duplicate skill names: {format_names(duplicate_cursor_names)}")
+                  if duplicate_cursor_paths:
+                      add(f"Cursor plugin has duplicate skill paths: {format_names(duplicate_cursor_paths)}")
+
+                  cursor_skill_names = {name for name in cursor_names if name}
+                  missing_cursor_skills = claude_skills - cursor_skill_names
+                  extra_cursor_skills = cursor_skill_names - claude_skills
+                  if missing_cursor_skills:
+                      add(f"Cursor plugin is missing Claude skills: {format_names(missing_cursor_skills)}")
+                  if extra_cursor_skills:
+                      add(f"Cursor plugin declares unknown skills: {format_names(extra_cursor_skills)}")
+
+                  for entry in cursor_entries:
+                      name = entry.get("name")
+                      path = entry.get("path")
+                      if not name:
+                          add("Cursor plugin contains a skill entry without a name")
+                          continue
+                      expected_path = f".claude/skills/{name}/SKILL.md"
+                      if path != expected_path:
+                          add(f"Cursor plugin path for {name} is {path!r}; expected {expected_path!r}")
+                      elif not Path(path).is_file():
+                          add(f"Cursor plugin path missing for {name}: {path}")
+
+                  cursor_agent_entries = cursor_manifest.get("agents", [])
+                  duplicate_cursor_agents = {
+                      name for name, count in Counter(cursor_agent_entries).items() if name and count > 1
+                  }
+                  if duplicate_cursor_agents:
+                      add(f"Cursor plugin has duplicate agents: {format_names(duplicate_cursor_agents)}")
+
+                  cursor_agents = {name for name in cursor_agent_entries if name}
+                  missing_cursor_agents = claude_agents - cursor_agents
+                  extra_cursor_agents = cursor_agents - claude_agents
+                  if missing_cursor_agents:
+                      add(f"Cursor plugin is missing agents: {format_names(missing_cursor_agents)}")
+                  if extra_cursor_agents:
+                      add(f"Cursor plugin has unknown agents: {format_names(extra_cursor_agents)}")
+              except (OSError, json.JSONDecodeError) as exc:
+                  add(f"Could not inspect .cursor-plugin/plugin.json: {exc}")
+
+          '''
+          update_marker = 'update_script = Path("cog-update.sh")\n'
+          if 'cursor_manifest_path = Path(".cursor-plugin/plugin.json")' not in validator:
+              if update_marker not in validator:
+                  raise SystemExit('validator update-script marker not found')
+              validator = validator.replace(update_marker, cursor_block + update_marker, 1)
+
+          version_marker = '        ".claude-plugin/plugin.json": json.loads(Path(".claude-plugin/plugin.json").read_text())["version"],\n'
+          cursor_version_line = '        ".cursor-plugin/plugin.json": json.loads(Path(".cursor-plugin/plugin.json").read_text())["version"],\n'
+          if cursor_version_line not in validator:
+              if version_marker not in validator:
+                  raise SystemExit('validator version marker not found')
+              validator = validator.replace(version_marker, version_marker + cursor_version_line, 1)
+
+          old_version_message = 'Version is aligned across .claude-plugin/plugin.json, plugin.json, marketplace-entry.json, and COG-VERSION'
+          new_version_message = 'Version is aligned across .claude-plugin/plugin.json, .cursor-plugin/plugin.json, plugin.json, marketplace-entry.json, and COG-VERSION'
+          if old_version_message in validator:
+              validator = validator.replace(old_version_message, new_version_message, 1)
+
+          old_surface_message = 'Claude/Antigravity parity is aligned '
+          new_surface_message = 'Claude/Antigravity/Cursor parity is aligned '
+          if old_surface_message in validator:
+              validator = validator.replace(old_surface_message, new_surface_message, 1)
+
+          validator_path.write_text(validator)
+
+          updater_path = Path('cog-update.sh')
+          updater = updater_path.read_text()
+          updater_marker = '  "tests/test-cog-update-force.sh"\n'
+          cursor_test_line = '  "tests/test-cursor-agent-parity.sh"\n'
+          if cursor_test_line not in updater:
+              if updater_marker not in updater:
+                  raise SystemExit('updater test marker not found')
+              updater = updater.replace(updater_marker, updater_marker + cursor_test_line, 1)
+          if not updater.endswith('\n'):
+              updater += '\n'
+          updater_path.write_text(updater)
+          PY
+
+      - name: Commit patch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .cursor-plugin/plugin.json scripts/validate-agent-surface.sh cog-update.sh
+          git diff --cached --check
+          git commit -m "fix: restore Cursor agent parity"
+          git push origin HEAD:fix/agent-surface-validator-parity
