@@ -47,6 +47,7 @@ validate_json() {
 }
 
 validate_json ".claude-plugin/plugin.json"
+validate_json ".cursor-plugin/plugin.json"
 validate_json "marketplace-entry.json"
 validate_json "plugin.json"
 
@@ -207,6 +208,61 @@ if manifest_path.is_file():
     except (OSError, json.JSONDecodeError) as exc:
         add(f"Could not inspect .claude-plugin/plugin.json: {exc}")
 
+cursor_manifest_path = Path(".cursor-plugin/plugin.json")
+if cursor_manifest_path.is_file():
+    try:
+        cursor_manifest = json.loads(cursor_manifest_path.read_text(encoding="utf-8"))
+        cursor_entries = cursor_manifest.get("skills", [])
+        cursor_names = [entry.get("name") for entry in cursor_entries]
+        cursor_paths = [entry.get("path") for entry in cursor_entries]
+        duplicate_cursor_names = {
+            name for name, count in Counter(cursor_names).items() if name and count > 1
+        }
+        duplicate_cursor_paths = {
+            path for path, count in Counter(cursor_paths).items() if path and count > 1
+        }
+        if duplicate_cursor_names:
+            add(f"Cursor plugin has duplicate skill names: {format_names(duplicate_cursor_names)}")
+        if duplicate_cursor_paths:
+            add(f"Cursor plugin has duplicate skill paths: {format_names(duplicate_cursor_paths)}")
+
+        cursor_skill_names = {name for name in cursor_names if name}
+        missing_cursor_skills = claude_skills - cursor_skill_names
+        extra_cursor_skills = cursor_skill_names - claude_skills
+        if missing_cursor_skills:
+            add(f"Cursor plugin is missing Claude skills: {format_names(missing_cursor_skills)}")
+        if extra_cursor_skills:
+            add(f"Cursor plugin declares unknown skills: {format_names(extra_cursor_skills)}")
+
+        for entry in cursor_entries:
+            name = entry.get("name")
+            path = entry.get("path")
+            if not name:
+                add("Cursor plugin contains a skill entry without a name")
+                continue
+            expected_path = f".claude/skills/{name}/SKILL.md"
+            if path != expected_path:
+                add(f"Cursor plugin path for {name} is {path!r}; expected {expected_path!r}")
+            elif not Path(path).is_file():
+                add(f"Cursor plugin path missing for {name}: {path}")
+
+        cursor_agent_entries = cursor_manifest.get("agents", [])
+        duplicate_cursor_agents = {
+            name for name, count in Counter(cursor_agent_entries).items() if name and count > 1
+        }
+        if duplicate_cursor_agents:
+            add(f"Cursor plugin has duplicate agents: {format_names(duplicate_cursor_agents)}")
+
+        cursor_agents = {name for name in cursor_agent_entries if name}
+        missing_cursor_agents = claude_agents - cursor_agents
+        extra_cursor_agents = cursor_agents - claude_agents
+        if missing_cursor_agents:
+            add(f"Cursor plugin is missing agents: {format_names(missing_cursor_agents)}")
+        if extra_cursor_agents:
+            add(f"Cursor plugin has unknown agents: {format_names(extra_cursor_agents)}")
+    except (OSError, json.JSONDecodeError) as exc:
+        add(f"Could not inspect .cursor-plugin/plugin.json: {exc}")
+
 update_script = Path("cog-update.sh")
 if not update_script.is_file():
     add("cog-update.sh is missing")
@@ -245,7 +301,7 @@ if errors:
     sys.exit(1)
 
 print(
-    "Claude/Antigravity parity is aligned "
+    "Claude/Antigravity/Cursor parity is aligned "
     f"({len(claude_skills)} skills, {len(claude_agents)} agents); "
     "manifest paths and update coverage are consistent"
 )
@@ -281,6 +337,7 @@ import sys
 try:
     values = {
         ".claude-plugin/plugin.json": json.loads(Path(".claude-plugin/plugin.json").read_text())["version"],
+        ".cursor-plugin/plugin.json": json.loads(Path(".cursor-plugin/plugin.json").read_text())["version"],
         "plugin.json": json.loads(Path("plugin.json").read_text())["version"],
         "marketplace-entry.json": json.loads(Path("marketplace-entry.json").read_text())["version"],
         "COG-VERSION": Path("COG-VERSION").read_text().strip(),
@@ -298,7 +355,7 @@ if len(versions) != 1:
 print(next(iter(versions)))
 PY
 )"; then
-  ok "Version is aligned across .claude-plugin/plugin.json, plugin.json, marketplace-entry.json, and COG-VERSION ($version_report)"
+  ok "Version is aligned across .claude-plugin/plugin.json, .cursor-plugin/plugin.json, plugin.json, marketplace-entry.json, and COG-VERSION ($version_report)"
 else
   record_failure "$version_report"
 fi

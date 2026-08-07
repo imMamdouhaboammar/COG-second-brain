@@ -43,6 +43,7 @@ FRAMEWORK_FILES=(
   "tests/test-cog-update-file-mode.sh"
   "tests/test-cog-update-mode-drift.sh"
   "tests/test-cog-update-force.sh"
+  "tests/test-cursor-agent-parity.sh"
 
   # Claude Code skills
   ".claude/skills/onboarding/SKILL.md"
