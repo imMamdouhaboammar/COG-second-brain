@@ -13,10 +13,11 @@ record_failure() {
 }
 
 init_dir="$TMP_DIR/init-run"
-set +e
-init_output="$(bash "$ROOT_DIR/.claude/lib/checkpoint.sh" init "$init_dir" 2>&1)"
-init_status=$?
-set -e
+if init_output="$(bash "$ROOT_DIR/.claude/lib/checkpoint.sh" init "$init_dir" 2>&1)"; then
+  init_status=0
+else
+  init_status=$?
+fi
 
 if [[ $init_status -ne 0 ]]; then
   record_failure "checkpoint init exited with status $init_status: $init_output"
@@ -27,17 +28,18 @@ elif ! grep -Fq "initialized: $init_dir/evidence/" <<< "$init_output"; then
 fi
 
 invalid_dir="$TMP_DIR/invalid-result"
-set +e
-invalid_output="$(bash "$ROOT_DIR/.claude/lib/checkpoint.sh" record "$invalid_dir" CP-1 MAYBE "invalid result" 2>&1)"
-invalid_status=$?
-set -e
+if invalid_output="$(bash "$ROOT_DIR/.claude/lib/checkpoint.sh" record "$invalid_dir" CP-1 MAYBE "invalid result" 2>&1)"; then
+  invalid_status=0
+else
+  invalid_status=$?
+fi
 
-if [[ $invalid_status -eq 0 ]]; then
-  record_failure "checkpoint record accepted result MAYBE: $invalid_output"
+if [[ $invalid_status -ne 2 ]]; then
+  record_failure "checkpoint record returned status $invalid_status for MAYBE; expected 2: $invalid_output"
 fi
 
 safe_dir="$TMP_DIR/safe-note"
-note=$'first field\tsecond field\nthird line'
+note=$'first field\tsecond field\rthird segment\nfourth line'
 bash "$ROOT_DIR/.claude/lib/checkpoint.sh" record "$safe_dir" CP-3 PASS "$note" >/dev/null
 
 checkpoint_file="$safe_dir/evidence/checkpoints.tsv"
@@ -51,6 +53,10 @@ else
 
   if ! awk -F '\t' 'NF == 4 {ok=1} END {exit !ok}' "$checkpoint_file"; then
     record_failure "checkpoint TSV row does not contain exactly 4 fields"
+  fi
+
+  if LC_ALL=C grep -q $'\r' "$checkpoint_file"; then
+    record_failure "checkpoint TSV row still contains a carriage return"
   fi
 fi
 
