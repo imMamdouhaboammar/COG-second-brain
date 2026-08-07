@@ -1,0 +1,17 @@
+name: Updater Trust Boundaries Regression
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Test updater trust boundaries
+        run: bash tests/test-cog-update-trust-boundaries.sh
