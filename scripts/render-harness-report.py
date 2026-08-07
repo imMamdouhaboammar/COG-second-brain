@@ -153,7 +153,7 @@ def render_open_items(data: dict[str, Any]) -> str:
 
 
 def render(template: str, data: dict[str, Any]) -> str:
-    """Fill only the supported report tokens and reject unresolved placeholders."""
+    """Fill supported tokens in one pass so inserted text is never reinterpreted."""
     replacements = {
         "goal": text(data.get("goal")),
         "north_star": text(data.get("north_star")),
@@ -167,14 +167,14 @@ def render(template: str, data: dict[str, Any]) -> str:
         "next_action": text(data.get("next_action")),
     }
 
-    output = template
-    for key, value in replacements.items():
-        output = output.replace(f"{{{{{key}}}}}", value)
+    def replace_token(match: re.Match[str]) -> str:
+        key = match.group(1)
+        try:
+            return replacements[key]
+        except KeyError as exc:
+            raise ValueError(f"unsupported template token: {key}") from exc
 
-    unresolved = sorted(set(TOKEN_RE.findall(output)))
-    if unresolved:
-        raise ValueError("unresolved template tokens: " + ", ".join(unresolved))
-    return output
+    return TOKEN_RE.sub(replace_token, template)
 
 
 def parse_args() -> argparse.Namespace:
