@@ -75,3 +75,5 @@ jobs:
             git commit -m "fix: align harness bootstrap contract"
             git push origin HEAD:fix/harness-bootstrap-contract
           fi
+
+# trigger: guarded patch after workflow exists on branch
