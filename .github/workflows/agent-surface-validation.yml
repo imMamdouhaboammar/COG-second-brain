@@ -19,7 +19,7 @@ jobs:
       - name: Apply marketplace version validator fix
         if: github.event_name == 'pull_request'
         run: |
-          python3 - <<'PY'
+          python3 - <<'PATCHPY'
           from pathlib import Path
 
           path = Path('scripts/validate-agent-surface.sh')
@@ -83,7 +83,7 @@ jobs:
           '''
 
           path.write_text(text[:start] + block + text[end:], encoding='utf-8')
-          PY
+          PATCHPY
 
           if ! git diff --quiet -- scripts/validate-agent-surface.sh; then
             git config user.name "github-actions[bot]"
