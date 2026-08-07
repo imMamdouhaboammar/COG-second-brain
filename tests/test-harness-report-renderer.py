@@ -114,6 +114,17 @@ def main() -> int:
         if csp not in rendered:
             raise AssertionError("rendered report is missing the restrictive CSP")
 
+        token_probe = base_data()
+        token_probe["goal"] = "{{evidence_blocks}}"
+        token_result = run_renderer(token_probe, directory)
+        if token_result.returncode != 0:
+            raise AssertionError(token_result.stderr or token_result.stdout)
+        token_rendered = (directory / "report.html").read_text(encoding="utf-8")
+        if "{{evidence_blocks}}" not in token_rendered:
+            raise AssertionError("user text that looks like a template token was reinterpreted")
+        if token_rendered.count('<article class="evidence">') != 1:
+            raise AssertionError("template-looking user text duplicated an evidence block")
+
         assert_rejected_media(
             "data:text/html;base64,PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg==",
             directory,
@@ -126,7 +137,9 @@ def main() -> int:
         )
         assert_rejected_media("javascript:alert(1)", directory, "javascript URI")
 
-    print("harness report renderer escapes text, enforces CSP, and rejects unsafe media")
+    print(
+        "harness report renderer escapes text, uses one-pass tokens, enforces CSP, and rejects unsafe media"
+    )
     return 0
 
 
