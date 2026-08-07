@@ -100,3 +100,5 @@ jobs:
             git commit -m "chore: prepare v3.10.4 harness bootstrap fix"
             git push origin HEAD:fix/harness-bootstrap-contract
           fi
+
+# trigger after workflow exists on branch
