@@ -63,3 +63,28 @@ run_expect_failure \
   "a missing Cursor agent"
 
 echo "validator rejects a missing Cursor agent"
+
+marketplace_fixture="$(make_fixture marketplace-version-drift)"
+python3 - "$marketplace_fixture/.github/MARKETPLACE.md" <<'PY'
+from pathlib import Path
+import re
+import sys
+
+path = Path(sys.argv[1])
+text = path.read_text(encoding='utf-8')
+text, count = re.subn(
+    r'Current packaged version: \*\*[^*]+\*\*',
+    'Current packaged version: **0.0.0**',
+    text,
+    count=1,
+)
+if count != 1:
+    raise SystemExit('marketplace version marker not found')
+path.write_text(text, encoding='utf-8')
+PY
+run_expect_failure \
+  "$marketplace_fixture" \
+  "Marketplace docs version mismatch: .github/MARKETPLACE.md=0.0.0" \
+  "marketplace documentation version drift"
+
+echo "validator rejects marketplace documentation version drift"
