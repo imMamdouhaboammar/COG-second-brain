@@ -240,11 +240,46 @@ EOF
 }
 
 # ── Ensure remote exists & fetch ─────────────────────────────────────
+normalize_remote_url() {
+  local url="$1"
+  url="${url%.git}"
+
+  case "$url" in
+    git@github.com:*)
+      printf 'https://github.com/%s\n' "${url#git@github.com:}"
+      ;;
+    ssh://git@github.com/*)
+      printf 'https://github.com/%s\n' "${url#ssh://git@github.com/}"
+      ;;
+    https://github.com/*)
+      printf '%s\n' "$url"
+      ;;
+    *)
+      printf '%s\n' "$url"
+      ;;
+  esac
+}
+
+remote_urls_match() {
+  local actual="$1" expected="$2"
+  [[ "$(normalize_remote_url "$actual")" == "$(normalize_remote_url "$expected")" ]]
+}
+
 ensure_remote() {
-  if ! git remote get-url "$REMOTE_NAME" &>/dev/null; then
+  local actual_url
+
+  if actual_url=$(git remote get-url "$REMOTE_NAME" 2>/dev/null); then
+    if ! remote_urls_match "$actual_url" "$REMOTE_URL"; then
+      err "Refusing to fetch: remote ${REMOTE_NAME} points to ${actual_url}"
+      err "Expected trusted upstream: ${REMOTE_URL}"
+      err "Review the remote before changing it: git remote -v"
+      return 1
+    fi
+  else
     info "Adding remote ${BOLD}${REMOTE_NAME}${RESET} → ${REMOTE_URL}"
     git remote add "$REMOTE_NAME" "$REMOTE_URL"
   fi
+
   info "Fetching latest from ${BOLD}${REMOTE_NAME}/${BRANCH}${RESET}..."
   git fetch "$REMOTE_NAME" "$BRANCH" --quiet
 }
