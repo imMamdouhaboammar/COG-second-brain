@@ -43,4 +43,11 @@ if grep -Fq 'fill every `{{token}}`' .claude/skills/ultragoal/SKILL.md; then
   exit 1
 fi
 
-echo "closed-loop harness assets and safe report renderer are wired into shipped skills"
+for path in scripts/render-harness-report.py tests/test-harness-report-renderer.py; do
+  if ! grep -Fq "  \"$path\"" cog-update.sh; then
+    echo "cog-update.sh does not track $path" >&2
+    exit 1
+  fi
+done
+
+echo "closed-loop harness assets, safe report renderer, and updater coverage are aligned"
