@@ -332,18 +332,39 @@ version_report=""
 if version_report="$(python3 - <<'PY'
 from pathlib import Path
 import json
+import re
 import sys
 
 try:
+    marketplace_docs = Path(".github/MARKETPLACE.md").read_text(encoding="utf-8")
+    marketplace_match = re.search(
+        r"Current packaged version:\s+\*\*([^*]+)\*\*",
+        marketplace_docs,
+    )
+    if not marketplace_match:
+        print("Could not read marketplace documentation version")
+        sys.exit(1)
+
     values = {
         ".claude-plugin/plugin.json": json.loads(Path(".claude-plugin/plugin.json").read_text())["version"],
         ".cursor-plugin/plugin.json": json.loads(Path(".cursor-plugin/plugin.json").read_text())["version"],
         "plugin.json": json.loads(Path("plugin.json").read_text())["version"],
         "marketplace-entry.json": json.loads(Path("marketplace-entry.json").read_text())["version"],
+        ".github/MARKETPLACE.md": marketplace_match.group(1).strip(),
         "COG-VERSION": Path("COG-VERSION").read_text().strip(),
     }
 except (OSError, KeyError, json.JSONDecodeError) as exc:
     print(f"Could not read package versions: {exc}")
+    sys.exit(1)
+
+cog_version = values["COG-VERSION"]
+marketplace_docs_version = values[".github/MARKETPLACE.md"]
+if marketplace_docs_version != cog_version:
+    print(
+        "Marketplace docs version mismatch: "
+        f".github/MARKETPLACE.md={marketplace_docs_version} "
+        f"COG-VERSION={cog_version}"
+    )
     sys.exit(1)
 
 versions = set(values.values())
@@ -355,7 +376,7 @@ if len(versions) != 1:
 print(next(iter(versions)))
 PY
 )"; then
-  ok "Version is aligned across .claude-plugin/plugin.json, .cursor-plugin/plugin.json, plugin.json, marketplace-entry.json, and COG-VERSION ($version_report)"
+  ok "Version is aligned across .claude-plugin/plugin.json, .cursor-plugin/plugin.json, plugin.json, marketplace-entry.json, .github/MARKETPLACE.md, and COG-VERSION ($version_report)"
 else
   record_failure "$version_report"
 fi
