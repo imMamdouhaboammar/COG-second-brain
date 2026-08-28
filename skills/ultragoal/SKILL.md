@@ -4,12 +4,14 @@ description: >
   Run a large, multi-session goal (e.g. shipping a whole side product) through the full V-model
   closed loop, one phase at a time, with cross-session state and a final
   north-star acceptance gate. Ultragoals never downgrade the lane: every
-  phase runs CP-1→CP-6 with adversarial verification. Use via /ultragoal.
+  phase runs CP-1→CP-6 with adversarial verification. Opt-in: invoke with
+  /ultragoal or by calling something a long-running goal. Ordinary work does not
+  run this.
 ---
 
 # Ultragoal — the closed loop for goals too big to ship in one run
 
-An **ultragoal** is the term for a north-star that spans many sessions: fork the repos, combine the strong parts, ship one product. A normal `/execute` run is one task through the loop. An ultragoal is a *chain of phases*, each of which is its own full closed-loop run, tracked so any cold session can resume.
+An **ultragoal** is the term for a north-star that spans many sessions: fork the repos, combine the strong parts, ship one product. A `/closed-loop` run is one task through the loop. An ultragoal is a *chain of phases*, each of which is its own full closed-loop run, tracked so any cold session can resume.
 
 **Core rule (from dwarves-kit, adopted fully): the worker never grades its own homework, and wrongness compounds across sessions — so verify every phase, not just the end.**
 
@@ -20,7 +22,7 @@ An **ultragoal** is the term for a north-star that spans many sessions: fork the
 - `/ultragoal status` — report all ultragoals from the registry; if the registry does not exist yet, report that no ultragoals are registered without creating a file
 - Trigger phrases: "make this an ultragoal", "this is a long-running goal", "combine these into one product over time"
 
-Do **not** use for single-run work — that is `/execute`. Rule of thumb: if it needs a phase decomposition and won't finish today, it is an ultragoal.
+Do **not** use for single-run work (that is `/closed-loop`), and do not start one on a request that never asked for one. Rule of thumb: if it needs a phase decomposition and won't finish today, it is an ultragoal.
 
 ## Files (one goal = one folder)
 
@@ -52,7 +54,7 @@ Registry rows point to each goal's `STATUS.md`; `STATUS.md` remains the detailed
 ## Phase 0 — Charter (`/ultragoal new`)
 
 1. Interview the user for the **north-star** in one sentence (what "done" looks like).
-2. Write `04-projects/<goal>/spec.md` from `04-projects/harness/templates/SPEC-template.md`:
+2. Write `04-projects/<goal>/spec.md` from `../closed-loop/references/spec-template.md`:
    - North-star statement
    - Falsifiable `AC-n` acceptance criteria (these define done for the *whole* goal)
    - Phase decomposition `P0…Pn` — each phase is a shippable increment mapped to a subset of `AC-n`
@@ -113,8 +115,8 @@ North-star acceptance:
 
 Every ultragoal carries a single self-contained HTML report that **covers everything**: north-star, live status, all phases, the full `AC-n` traceability table with pass/open/fail, evidence rows per phase, and the open-items / next-action block.
 
-- **Renderer:** build structured JSON using the Safe report data contract in `closed-loop`, then run `python3 scripts/render-harness-report.py --data <report-data.json> --output 04-projects/<goal>/report.html`. The renderer reads `04-projects/harness/templates/report.html` by default.
-- **No manual token substitution:** never copy the template and paste raw project/evidence text into HTML. The renderer HTML-escapes every text field and derives CSS classes from fixed mappings.
+- **Renderer:** build structured JSON using the Safe report data contract in `closed-loop`, then run `python3 scripts/render-harness-report.py --data <report-data.json> --output 04-projects/<goal>/report.html`. The renderer uses `04-projects/harness/templates/report.html` by default.
+- **No manual token substitution:** never copy a template and paste raw project/evidence text into HTML. The renderer HTML-escapes every text field and derives CSS classes from fixed mappings.
 - **Media:** screenshots may be supplied only as validated base64 `data:image/png`, `jpeg`, `webp`, or `gif` entries in the structured `media` list. Arbitrary HTML and non-image data URIs are rejected.
 - **Deliverable path:** `04-projects/<goal>/report.html`. One file, overwritten each phase so it reflects current truth.
 - **When:** regenerate at each phase gate (CP-6) and again at final north-star acceptance. The final report must show every `AC-n` with a PASS row — if any status is open, the goal is not done.
@@ -172,4 +174,4 @@ Decision needed: <one question>
 
 ## Registered ultragoals
 
-`04-projects/harness/ultragoals.md` is created on the first `/ultragoal new`. If it does not exist yet, `/ultragoal status` reports no registered ultragoals without mutating the vault. Each registry row points to a goal folder containing `spec.md`, `STATUS.md`, `evidence/`, and `report.html`.
+Live list: `04-projects/harness/ultragoals.md`. Each ultragoal gets its own `04-projects/<goal>/` folder holding `spec.md`, `STATUS.md`, `evidence/`, and `report.html`.

@@ -83,6 +83,28 @@ Often-empty phrases: it's worth noting, it's important to note, at the end of th
 
 **Em dashes.** Do not use them as a default rhythm crutch. In short copy, use none. In longer drafts, 1-2 are fine if they clearly beat commas, periods, or parentheses. Remove clusters and decorative dashes.
 
+## Structural slop
+
+Word bans catch surface slop. The deeper tell is composition: predictable rhetorical structure with low information gain. A draft can pass every word check and still read as a miniature consulting memo. These patterns apply to the shape of the whole piece, not individual sentences.
+
+**Frameworkification.** Ordinary reasoning named as a framework: "the gate: four decisions", "the three-layer model", "five principles for X". Cut the label and taxonomy unless it exists in the source material or genuinely reduces complexity. "Three pillars" where nature provided a list of three unrelated points is a list, not pillars.
+
+**Rhetorical-function headings.** Headings that announce what the prose is doing instead of what it is about: "What this is not", "Why this matters", "The key insight", "The real opportunity", "Evidence before breadth", "The bottom line", "The deeper point", "The uncomfortable truth". Replace with subject-matter headings ("Authentication", "Pricing") or delete the section break entirely.
+
+**Negative runway.** Explaining what something isn't before saying what it is. Delete the runway; state the thing.
+
+**Straw-man corrections.** Inventing a misconception nobody holds in order to theatrically correct it: "It's not X, it's Y", "This isn't about X", "While it may seem...", "Unlike...". Allowed only when X is a real position held by someone relevant to the discussion.
+
+**Symmetrical exposition.** Every idea gets an equal-sized section regardless of importance. Reweight: space proportional to evidence and consequence. One finding may deserve ten paragraphs, another one line, and the unevenness is correct.
+
+**Section scaffolding over thin content.** Headers, tables, and numbered lists wrapping 1-2 paragraphs of substance. Collapse to continuous prose.
+
+**Artificial resolution.** A neat maxim, synthesis, or "bottom line" appended because responses are supposed to end with one. Stop when the useful information is exhausted.
+
+**Low marginal information density.** The master check: after each paragraph, ask what fact, mechanism, example, implication, counterexample, or decision exists here that wasn't in the previous paragraph. If the answer is "none, but it sounds persuasive", delete it.
+
+The reliable composition order is finding -> evidence -> reasoning -> decision, not principle -> framework -> exposition -> takeaway. The first order makes rhetorical-function headings nearly impossible to write, because the evidence itself occupies the position the label would have taken.
+
 ## Workflow
 
 1. Read the full draft before editing.

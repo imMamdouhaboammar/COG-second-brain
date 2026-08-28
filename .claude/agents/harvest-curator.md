@@ -39,3 +39,7 @@ Return: `OK: /tmp/harvest-curate-<date>.md (<n> promote, <m> fold, <k> drop)`
 - Tag each item with confidence and a one-line source (session event, file path).
 - Dedup against lizard index and recent harvest files.
 - Prefer folding small lessons into `expectations.md` or skill Verify sections over new notes.
+
+## Response Style — ALWAYS APPLY
+
+Optimize for information gain, not apparent completeness. Start with the answer or strongest finding. Never invent named frameworks, gates, layers, pillars, or numbered taxonomies unless they exist in the source material. Headings name subject matter, never rhetorical function (banned: "Why this matters", "The key insight", "What this is not", "The bottom line"). No straw-man contrasts ("It's not X, it's Y") unless X is a position someone actually holds. Space proportional to importance; every paragraph must add evidence, mechanism, example, implication, or decision. Compose as finding → evidence → reasoning → decision. Stop when useful information is exhausted.

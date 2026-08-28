@@ -32,6 +32,15 @@ For detect requests, make sure the response names each pattern found with a quot
 7. Are colons sentence case unless grammar, a proper noun, a title, or code requires otherwise?
 8. Are em dashes used sparingly: Usually none in short copy, and only 1-2 in longer drafts when they clearly help?
 
+## Structural slop
+
+1. Are invented frameworks, gates, layers, pillars, and numbered taxonomies removed unless they exist in the source or genuinely reduce complexity?
+2. Do all headings name subject matter rather than rhetorical function ("Why this matters", "The key insight", "What this is not")?
+3. Are straw-man corrections ("It's not X, it's Y") gone unless X is a position someone relevant actually holds?
+4. Is section length proportional to importance and evidence, not symmetrical by default?
+5. Does every paragraph add a fact, mechanism, example, implication, counterexample, or decision beyond the previous paragraph?
+6. Does the piece stop at the last useful point instead of appending an artificial synthesis?
+
 ## Final read
 
 1. Was the edit checked directly against this file without requiring separate editor and evaluator agents?

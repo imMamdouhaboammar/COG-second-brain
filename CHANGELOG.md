@@ -2,45 +2,86 @@
 
 All notable changes to COG (Cognition + Obsidian + Git) will be documented in this file.
 
-## [3.10.3] - 2026-08-07
+## [3.12.0] - 2026-08-25
+
+### Changed
+
+#### The verification harness is opt-in, not mandated
+Reported in [#43](https://github.com/huytieu/COG-second-brain/issues/43): `CLAUDE.md` carried four **ALWAYS APPLY** sections mandating the V-model harness on every task, while `WORKFLOW.md` opened by asserting that "every non-`tiny` task walks the V." Nothing in a normal COG session does that, and a mandate no session honors teaches the model to discount every other rule in the file. The harness is good machinery for the runs that want it and pure ceremony on a braindump.
+
+- `CLAUDE.md`: the four sections (V-Model Checkpoints, Closed-Loop Execute, Risk Lanes, Ultragoal) collapse into one **Verification Harness (opt-in, off by default)**. It names the three ways to turn the harness on and states plainly that a session which never invoked it owes no checkpoints, no lane classification, and no evidence ledger. Two rules survive as always-on because they cost nothing: verification observes the artifact, and a worker never grades its own homework.
+- `WORKFLOW.md`: new **Scope: opt-in only** section at the top. The V-model text now reads "inside a harness run, every non-`tiny` task walks the V."
+- Third opt-in path: `verification_harness: on` in `00-inbox/MY-PROFILE.md` makes the `normal`-lane pipeline the default for build tasks. Absent or `off` means per-request. Added to the onboarding profile template.
+- `AGENTS.md`, `README.md`: the harness section leads with opt-in; per-skill trigger lists no longer claim the loop fires "automatically, whenever a task mutates external state".
 
 ### Fixed
 
-- `checkpoint.sh init` now succeeds from a clean checkout because the evidence-ledger template is shipped.
-- `checkpoint.sh record` now rejects results outside `PASS`, `FAIL`, and `SKIP` before writing evidence.
-- Checkpoint TSV serialization now keeps free-text notes and run paths on one row by normalizing tabs and newlines and using `printf` instead of `echo -e`.
-- Closed-loop and ultragoal flows now ship the `SPEC-template.md` and self-contained `report.html` assets they already reference.
-- Harness HTML reports now render from structured JSON through `scripts/render-harness-report.py`; text fields are HTML-escaped and media is restricted to validated base64 image data URIs.
+#### Harness references that pointed at files COG never shipped
+Also from [#43](https://github.com/huytieu/COG-second-brain/issues/43): the skills instructed the model to copy templates from `04-projects/harness/templates/`, a directory that does not exist in a COG checkout, and `WORKFLOW.md` closed with an **Install** block calling `.claude/lib/install-harness.sh`, a script that does not exist either. `checkpoint.sh init` would have failed on the same missing template path.
+
+- Templates now ship with the skills, so `/update-cog` keeps them current: `closed-loop/references/spec-template.md`, `closed-loop/references/report-template.html` (self-contained, theme-aware), `retro/references/retro-template.md`, `review-cockpit/references/session-review-template.md`. All four added to the updater's framework file list.
+- `checkpoint.sh init` writes the evidence-ledger header inline instead of copying a missing file.
+- The Install block is replaced by **No install step**: the two `.claude/lib` scripts ship executable, run directories are created on demand, and COG ships no hooks. The `harvest` nightly block no longer calls the phantom installer, and the `harvest` trigger list no longer claims a SessionEnd hook stages automatically.
+- `/execute` never existed as a command; every reference now points at `/closed-loop`. `WORKFLOW.md`'s domain-routing and self-enhancement tables listed skills COG does not ship (`dogfood-release`, `aut-skill-capture`, gstack, lizard) and now list the ones it does.
+- Vault-specific leakage removed from the harness surface: the `browser-harness` Python helpers in `closed-loop`, and the `Agent(model="fable")` call shape in `WORKFLOW.md`.
+- `CLAUDE.md` said `.claude/agents/` holds 6 agents; it holds 10, and `.claude/lib/` was missing from the framework file list.
+
+## [3.11.0] - 2026-08-24
 
 ### Added
 
-- Regression coverage for checkpoint initialization, result validation, TSV row integrity, and required closed-loop harness assets.
+#### Structural slop: composition-level anti-slop rules
+Word bans catch surface slop ("delve", em dashes); the deeper LLM tell is composition — predictable rhetorical structure with low information gain. Community evidence converged on this: large-scale analyses of perceived AI writing found flat rhythm and polished-but-empty paragraphs outrank word-level tells, and recurring complaints target invented frameworks ("the gate: four decisions"), rhetorical-function headings ("What this is not", "Why this matters"), and straw-man contrasts ("It's not X, it's Y").
 
-## [3.10.2] - 2026-08-07
+- `no-ai-slop` skill: new **Structural slop** section — frameworkification, rhetorical-function headings, negative runway, straw-man corrections, symmetrical exposition, section scaffolding over thin content, artificial resolution, and the master check of marginal information density per paragraph. Composition order: finding → evidence → reasoning → decision, not principle → framework → exposition → takeaway.
+- `no-ai-slop` eval: six matching structural checks.
+- CLAUDE.md + .cursorrules: **Response Style (ALWAYS APPLY)** section so the rules govern every response, not only draft-editing runs (same hoisting rationale as 3.10.1 — behavioral rules cannot live only in a lazily-loaded skill).
+- All 10 agent definitions: compact Response Style block, so subagent reports follow the same composition rules as the lead.
+
+## [3.10.2] - 2026-08-18
+
+### Changed
+
+#### Oversized skill bodies split into bundled `references/`
+Everything after a skill's frontmatter loads into context the moment the skill triggers. Five SKILL.md bodies ran past the 500-line figure in the Agent Skills best-practices guidance, the largest at 87 KB, so a task that never touched the appendix material paid for it anyway. Lookup tables and document templates now live in `references/` files the model reads only when it needs them, following the shape `museum-art`, `data-forms` and `editorial-illustrations` already use.
+
+| skill | body before | body after |
+|---|---|---|
+| `knowledge-consolidation` | 870 | 293 |
+| `onboarding` | 553 | 304 |
+| `team-brief` | 886 | 473 |
+| `product-ui-taste` | 649 | 515 |
+| `taste-skill` | 1204 | 786 |
+
+Every move is verbatim. `product-ui-taste` lands just above the guideline and `taste-skill` well above it: what remains in both is live instruction rather than lookup material, and condensing it would be an editorial rewrite with real behavioral risk, not a mechanical move. Stated plainly rather than forced under the number.
 
 ### Fixed
 
-- `lane-classify.sh explain` now returns structured `lane`, `score`, and hard-gate reason output for security, bug, and backfill gates, matching the existing tiny-gate behavior.
-- `classify` output and hard-gate precedence remain unchanged.
+#### Bundled reference files now actually ship to installed users
+`cog-update.sh` enumerates individual files in `FRAMEWORK_FILES`, and no `references/*.md` had ever been listed. The 13 files under `museum-art/references/`, `data-forms/references/` and `editorial-illustrations/references/` therefore never reached anyone who installed COG — `museum-art`'s own `## References` section pointed at files those users did not have. All 27 reference files are now registered.
 
-### Added
+**Existing installs: run `./cog-update.sh` twice for this release.** Your local copy of the updater carries the old `FRAMEWORK_FILES` array, so the first run delivers the trimmed skills and the new updater but not the reference files the new array names; the second run picks them up.
 
-- Regression coverage for `classify` and `explain` output across all four hard-gate families.
+Reported in #29, with the measurements reproduced exactly.
 
-## [3.10.1] - 2026-08-07
+## [3.10.1] - 2026-08-18
 
 ### Fixed
 
-- Packaging validation now enforces exact Claude, Antigravity, and Cursor skill/agent parity, manifest paths, Agent Plugins mirror parity, updater coverage, and published-version consistency.
-- Restored the four verification/repair agents missing from `.cursor-plugin/plugin.json` since the 10-agent release.
-- `cog-update.sh` now preserves upstream executable bits and detects mode-only drift for tracked framework files.
-- `cog-update.sh` no longer exits after the first update or skip under `set -e` because counters now use errexit-safe arithmetic assignment.
-- Packaging documentation and Cursor guidance now match the shipped 33-skill, 10-agent surfaces.
+#### The daily journal is actually ambient now
+`daily-journal` described itself as an automatic, passive log the agent keeps for you, but it logged nothing until you invoked it. The cause was architectural, not a missing instruction: the behavioral trigger ("append after finishing a meaningful unit of work") lived inside `SKILL.md`, and a skill body is lazily loaded, so the instruction telling the agent to act ambiently was itself locked behind the manual trigger.
 
-### Added
+A behavioral trigger cannot live in a lazily loaded file. The trigger now lives on the always-loaded surfaces and the skill body keeps the procedure.
 
-- GitHub Actions framework validation on pull requests and `main` pushes.
-- Regression coverage for Antigravity drift, Cursor agent drift, marketplace version drift, updater file modes, and multi-file force updates.
+- **`CLAUDE.md`** gains a `## Daily Journal (ALWAYS APPLY)` section carrying the trigger, the do-not-log list, and an explicit opt-out.
+- **`.cursorrules`** gains the same rule in its own register, since Cursor does not read `CLAUDE.md`.
+- **`AGENTS.md`** names `CLAUDE.md` as the trigger's home so the surfaces agree.
+- **`SKILL.md`** stops claiming to be its own trigger and points at where the trigger actually lives.
+- `01-daily/journal/` now ships with a `.gitkeep` so the destination exists on a fresh clone.
+
+Also fixes a dangling reference in `daily-journal`'s purpose line: it compared itself to `/daily-checkin`, which this repo does not ship. The skill is `/weekly-checkin`.
+
+Reported in #26, with the correct diagnosis.
 
 ## [3.10.0] - 2026-08-07
 

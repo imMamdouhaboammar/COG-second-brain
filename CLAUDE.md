@@ -1,69 +1,38 @@
 # COG Second Brain — Framework Instructions
 
-> Lifecycle: `WORKFLOW.md` (V-model harness) · Universal surface: `AGENTS.md`
+> Opt-in verification harness: `WORKFLOW.md` · Universal surface: `AGENTS.md`
 
-## V-Model Checkpoints (ALWAYS APPLY)
+## Response Style (ALWAYS APPLY, every agent, every deliverable)
 
-Work walks the **V**: decompose left (spec → plan), build at the apex, verify right with **evidence** traced to criterion IDs (`AC-n`). See `WORKFLOW.md` for the full diagram.
+Optimize for **information gain, not apparent completeness**. The failure mode is framework slop: ordinary reasoning dressed as a consulting memo. Full pattern list: `.claude/skills/no-ai-slop/SKILL.md` § Structural slop.
 
-| CP | Phase | Blocking when |
-|---|---|---|
-| CP-1 | Spec + traceability matrix | `normal`+ |
-| CP-2 | Plan (tasks ↔ AC-n) | `normal`+ |
-| CP-3 | Build | always |
-| CP-3v | Component verify (`task-verifier`) | `normal`+ |
-| CP-4 | Integration verify (`integration-verifier`) | `full`+, multi-task |
-| CP-5 | Acceptance (post-condition artifacts) | mutations |
-| CP-6 | Ship (Review Gate / user approval) | external |
-| CP-7 | Retro (`/retro`) + harvest | advisory, expected |
+- Start with the answer or strongest finding; no introduction announcing how you will answer.
+- Never invent named frameworks, gates, layers, pillars, lenses, or numbered taxonomies unless they exist in the source material or the categorization materially simplifies a complex subject.
+- No sections for 1-2 paragraphs; default to continuous prose with occasional descriptive headings.
+- Headings identify subject matter ("Authentication"), never rhetorical function. Banned: "What this is not", "Why this matters", "The key insight", "The real opportunity", "The bottom line", "The deeper point", "The uncomfortable truth".
+- No straw-man contrasts ("It's not X, it's Y", "This isn't about X", "While it may seem...", "Unlike...") unless X is a position someone relevant actually holds.
+- Space proportional to importance and evidence; each paragraph must add evidence, mechanism, example, implication, counterexample, or decision.
+- Compose as **finding → evidence → reasoning → decision**, not principle → framework → exposition → takeaway.
+- Prefer concrete nouns over abstract labels. Stop when the useful information is exhausted.
 
-**Two-way verification:** every `AC-n` has a task on the left and ≥1 `EVIDENCE AC-n | CP-* | PASS | …` row on the right before ship. Record checkpoints with `bash .claude/lib/checkpoint.sh record <run-dir> <CP> PASS|FAIL "<note>"`. Evidence bundles live in `04-projects/harness/runs/<id>/evidence/ledger.md`.
+Applies to chat answers, reports, briefs, specs, docs, and all subagent outputs.
 
-**Cross-model flagship gate (`full`+ / ultragoal / irreversible):** overlay a flagship model that is NOT the lead's own as a cross-model advisor at CP-1 and critic at CP-4, CP-5, CP-6. Fresh context, read-only, advisory. Same-family verifiers share the lead's blind spots; a different model catches a different error class. A critical cross-model finding blocks auto-ship. Skip on `tiny`/`normal`.
+## Verification Harness (opt-in, off by default)
 
-## Closed-Loop Execute (ALWAYS APPLY, build tasks)
+COG ships a V-model verification harness: decompose left (spec then plan), build at the apex, verify right with evidence traced to criterion IDs (`AC-n`). **It does not run unless you ask for it.** Ordinary work (notes, briefs, research, drafts, edits) takes no checkpoints, no lane classification, and no evidence ledger.
 
-Every **build task** (`normal` lane and above) runs the verification pipeline before reporting success. Skill: `.claude/skills/closed-loop/SKILL.md`. Inspired by [dwarves-kit](https://github.com/dwarvesf/dwarves-kit).
+Three ways to turn it on:
 
-```
-worker → task-verifier (read-only) → fix-agent (max 2 retries) → escalate to the user
-```
+- **By skill.** `/closed-loop`, `/ultragoal`, `/retro`, `/harvest`, `/review-cockpit`.
+- **By phrasing.** "Run this through the closed loop", "verify this properly", "track this as an ultragoal", "give me an evidence trail".
+- **By profile.** Set `verification_harness: on` in `00-inbox/MY-PROFILE.md` frontmatter to make the `normal`-lane pipeline the default for build tasks. Absent or `off` means opt-in per request.
 
-| Lane | Ceremony | Classifier |
-|---|---|---|
-| `tiny` | worker + post-condition if mutating | `bash .claude/lib/lane-classify.sh classify "<task>"` |
-| `normal` | full pipeline above | default |
-| `full` | pipeline + claim-verifier for auditable claims | briefs, publishes |
-| `bug` | evidence ledger before fix; 3-fix wall | regressions |
-| `backfill` | audit/plan only until approved | doc retrofits |
+Inside a harness run: checkpoints, gate classes, risk lanes, and file homes are in `WORKFLOW.md`; the build-verify-fix pipeline is in `.claude/skills/closed-loop/SKILL.md`; multi-session goals are in `.claude/skills/ultragoal/SKILL.md`. Those documents oblige nothing in a session that never invoked them.
 
-**Rules:**
-- `task-verifier` and `fix-agent` are **fresh-context** subagents (paths only, never paste worker output into a verifier).
-- Verifier agents are **read-only**. They cannot edit files or mutate external state.
-- **Dispatch a verifier subagent when there is external state, or when a fresh pair of eyes is the point**: mutations (publishes, pushes, tracker transitions, deploys), auditable claims, `full`+ lanes, every ultragoal phase.
-- **On `normal`-lane read-only work, the lead verifies inline instead.** Spawning a verifier to re-read a file the lead just wrote buys nothing.
-- Verification means **observing the artifact** (curl the URL, screenshot the page, re-fetch the issue, diff the file), never re-reading the worker's own summary of it.
-- Max **2** fix-agent retries per task, then `ESCALATE` with evidence. Log outcomes to `.claude/logs/loop-ledger.tsv`.
+Two of the harness's rules are worth applying whether or not it is on, because they cost nothing:
 
-## Risk Lanes (ALWAYS APPLY)
-
-Classify before executing: `bash .claude/lib/lane-classify.sh explain "<task>"`.
-
-- **tiny**: skip verifier unless external mutation.
-- **normal**: closed-loop + single-file deliverable. Verifier subagent only when the task mutates external state.
-- **full**: closed-loop + adversarial claim-verifier + Review Gate for external.
-- **bug**: root cause before patch.
-- **backfill**: no behavior change without approval.
-
-## Ultragoal (ALWAYS APPLY, long-running goals)
-
-An **ultragoal** is a large, multi-session goal that can't ship in one run. It gets the closed loop applied in full and is never lane-downgraded. Skill: `.claude/skills/ultragoal/SKILL.md`.
-
-- **One spec, north-star + `AC-n`.** `04-projects/<goal>/spec.md` holds the north-star, falsifiable acceptance criteria, and a phase decomposition (`P0…Pn`).
-- **Every phase is a full closed-loop run** (CP-1 → CP-6). No `tiny` shortcut inside an ultragoal.
-- **Living status ledger.** `04-projects/<goal>/STATUS.md` tracks phase state, current phase, open `AC-n`, and next action so any session resumes cold.
-- **Two acceptance gates.** Per-phase acceptance (CP-5) AND a final **north-star acceptance verifier** that checks every `AC-n` has a PASS row.
-- **Adversarial by default.** Wrongness compounds across sessions, so verify every phase, not only the end.
+- **Verification means observing the artifact**: curl the URL, screenshot the page, re-fetch the issue, diff the file. Never re-read a worker's own summary of it. Mandatory for external mutations; see § Skill Post-Condition Rule.
+- **A worker never grades its own homework.** When a fresh pair of eyes is the point (external mutations, auditable claims), the verifier is a separate read-only subagent that receives paths and criteria, never the worker's output.
 
 ## Visual Verification (ALWAYS APPLY, UI/UX tasks)
 
@@ -72,7 +41,7 @@ Any task that **implements or changes a UI/UX flow** is not verified by a DOM/se
 - **Capture visual evidence.** Screenshot every meaningful state; record multi-step flows.
 - **Actually read the image, then compare** against the intended design (mock, spec wireframe, prior state, house style). Name the discrepancy; never declare pass on "element exists."
 - **Fix the UI error you spot**. This is part of the task, not a follow-up. Re-capture to prove it.
-- Evidence lands in the run evidence dir and feeds the CP-5 post-condition row.
+- Keep the screenshots next to the deliverable. Inside a harness run they are the CP-5 acceptance evidence.
 
 ## Delegation Cap (ALWAYS APPLY)
 
@@ -96,8 +65,8 @@ When spawning subagents, use the correct model for the task:
 | File operations (vault reads/writes, metadata, profiles) | **Sonnet** | `worker-file-ops` |
 | Pre-approved mutations (Jira transitions, Linear updates, API calls) | **Sonnet** | `worker-executor` |
 | People profile updates from brief/meeting data | **Sonnet** | `brief-people-updater` |
-| Read-only verification (acceptance criteria, post-conditions) | **Sonnet** | `task-verifier` |
-| Cross-task integration verify (CP-4) | **Sonnet** | `integration-verifier` |
+| Read-only verification, harness runs only (acceptance criteria, post-conditions) | **Sonnet** | `task-verifier` |
+| Cross-task integration verify, harness runs only (CP-4) | **Sonnet** | `integration-verifier` |
 | Targeted fixes after verifier FAIL:fixable | **Sonnet** | `fix-agent` |
 | Harvest staging curation (propose-only) | **Sonnet** | `harvest-curator` |
 | Reasoning, synthesis, cross-referencing, writing | **Opus** | Lead session (no delegation) |
@@ -208,6 +177,18 @@ The failure mode this prevents is **confident-but-unchecked**: a step returns pl
 
 ---
 
+## Daily Journal (ALWAYS APPLY)
+
+The daily journal is an **ambient** behavior, not a command. The trigger lives here because it has to be loaded in every session; the procedure lives in the skill (`.claude/skills/daily-journal/SKILL.md`).
+
+- **After finishing a meaningful unit of work, append one entry** to `01-daily/journal/YYYY-MM-DD.md` (get the date with `date +%F`, never guess). Meaningful = shipped or committed something, produced a deliverable, made a decision, changed direction, or hit a notable blocker.
+- **Create the file from the skill's template on the first entry of the day.** Append only; newest entries at the bottom of the `## Log` section.
+- **Do NOT log** trivial reads, one-line lookups, mid-task scratch work, the journal's own writes, or anything you asked to keep out. Do not announce the write — append and carry on.
+- Read the skill body for the entry format, `reflect` mode, and the full guardrails before the session's first write.
+- If you say to stop journaling, stop for the rest of the session and do not re-ask.
+
+---
+
 ## Integration Preferences
 
 Before using any external integration in a skill, check `00-inbox/MY-INTEGRATIONS.md`:
@@ -245,8 +226,9 @@ Role packs live in `.claude/roles/`. New roles can be added by dropping a file f
 
 ### Framework files (updated via `cog-update.sh` or `/update-cog`)
 - `.claude/skills/`: Claude Code skills (33 skills)
-- `.claude/agents/` — Worker agent definitions (6 agents)
+- `.claude/agents/` - Worker and verifier agent definitions (10 agents)
 - `.claude/roles/` — Role packs for personalized recommendations
+- `.claude/lib/` - Harness helper scripts (`checkpoint.sh`, `lane-classify.sh`)
 - `.kiro/powers/` — Kiro powers
 - `.gemini/commands/` — Gemini CLI commands
 - `AGENTS.md` — Universal agent documentation

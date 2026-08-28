@@ -8,7 +8,6 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 LOG="$ROOT/.claude/logs/checkpoint-ledger.tsv"
-TEMPLATE="$ROOT/04-projects/harness/templates/evidence-ledger.md"
 mkdir -p "$ROOT/.claude/logs"
 
 cmd="${1:-}"
@@ -24,13 +23,22 @@ sanitize_tsv_field() {
 
 init_run() {
   local dir="$1"
-  if [[ ! -f "$TEMPLATE" ]]; then
-    echo "missing evidence ledger template: $TEMPLATE" >&2
-    return 1
-  fi
-
   mkdir -p "$dir/evidence"
-  [[ -f "$dir/evidence/ledger.md" ]] || cp "$TEMPLATE" "$dir/evidence/ledger.md"
+  if [[ ! -f "$dir/evidence/ledger.md" ]]; then
+    cat > "$dir/evidence/ledger.md" <<'LEDGER'
+# Evidence ledger
+
+One row per verify pass. The observation records what was observed in the
+artifact, never what a worker reported.
+
+```text
+EVIDENCE <AC-id> | <checkpoint> | PASS|FAIL | <observation> | <artifact-path-or-command>
+```
+
+## Rows
+
+LEDGER
+  fi
   echo "initialized: $dir/evidence/"
 }
 

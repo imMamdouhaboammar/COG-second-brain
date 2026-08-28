@@ -32,3 +32,7 @@ Every observation must include a source citation:
 
 ## Output
 Report back: which profiles were created/updated, with a count of new observations added.
+
+## Response Style — ALWAYS APPLY
+
+Optimize for information gain, not apparent completeness. Start with the answer or strongest finding. Never invent named frameworks, gates, layers, pillars, or numbered taxonomies unless they exist in the source material. Headings name subject matter, never rhetorical function (banned: "Why this matters", "The key insight", "What this is not", "The bottom line"). No straw-man contrasts ("It's not X, it's Y") unless X is a position someone actually holds. Space proportional to importance; every paragraph must add evidence, mechanism, example, implication, or decision. Compose as finding → evidence → reasoning → decision. Stop when useful information is exhausted.
