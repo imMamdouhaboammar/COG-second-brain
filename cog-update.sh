@@ -99,6 +99,39 @@ FRAMEWORK_FILES=(
   ".claude/skills/taste-skill/SKILL.md"
   ".claude/skills/product-ui-taste/SKILL.md"
 
+  # Skill reference files (bundled lookup material, loaded on demand)
+  ".claude/skills/closed-loop/references/report-template.html"
+  ".claude/skills/closed-loop/references/spec-template.md"
+  ".claude/skills/data-forms/references/forms.md"
+  ".claude/skills/editorial-illustrations/references/design-system.md"
+  ".claude/skills/editorial-illustrations/references/elements.md"
+  ".claude/skills/editorial-illustrations/references/worked-examples.md"
+  ".claude/skills/knowledge-consolidation/references/templates.md"
+  ".claude/skills/museum-art/references/_synthesis.md"
+  ".claude/skills/museum-art/references/artic.md"
+  ".claude/skills/museum-art/references/cleveland.md"
+  ".claude/skills/museum-art/references/getty.md"
+  ".claude/skills/museum-art/references/met.md"
+  ".claude/skills/museum-art/references/nga.md"
+  ".claude/skills/museum-art/references/rijksmuseum.md"
+  ".claude/skills/museum-art/references/smithsonian.md"
+  ".claude/skills/museum-art/references/smk.md"
+  ".claude/skills/onboarding/references/profile-templates.md"
+  ".claude/skills/onboarding/references/welcome-guide.md"
+  ".claude/skills/retro/references/retro-template.md"
+  ".claude/skills/review-cockpit/references/session-review-template.md"
+  ".claude/skills/product-ui-taste/references/block-skeletons.md"
+  ".claude/skills/product-ui-taste/references/canonical-sources.md"
+  ".claude/skills/product-ui-taste/references/install-commands.md"
+  ".claude/skills/taste-skill/references/canonical-sources.md"
+  ".claude/skills/taste-skill/references/design-systems-install.md"
+  ".claude/skills/taste-skill/references/liquid-glass.md"
+  ".claude/skills/taste-skill/references/motion-skeletons.md"
+  ".claude/skills/taste-skill/references/pattern-vocabulary.md"
+  ".claude/skills/team-brief/references/agent-prompts.md"
+  ".claude/skills/team-brief/references/brief-frontmatter.md"
+  ".claude/skills/team-brief/references/publish-templates.md"
+
   # Role packs
   ".claude/roles/_template.md"
   ".claude/roles/product-manager.md"
@@ -610,7 +643,7 @@ main() {
   # ── Force mode ───────────────────────────────────────────────────
   if [[ "$mode" == "force" ]]; then
     local updated=0
-    for f in "${changed[@]}" ${new_files:+"${new_files[@]}"}; do
+    for f in ${changed:+"${changed[@]}"} ${new_files:+"${new_files[@]}"}; do
       if [[ -f "$f" ]]; then
         backup_file "$f" >/dev/null
       fi
